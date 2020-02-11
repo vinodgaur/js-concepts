@@ -1,0 +1,141 @@
+//====================== dom lib ========================
+(function(window, libName) {
+    // v$ constructor
+    function v$(selector) {
+
+        if (!(this instanceof v$)) {
+            return new v$(selector);
+        }
+
+        // Number of elements in collection
+        this.length = 0;
+
+        // Nodes collection array
+        this.nodes = [];
+
+        // HTMLElements and NodeLists are wrapped in nodes array
+        if (selector instanceof HTMLElement) {
+            this.nodes = selector.length > 1 ? [].slice.call(selector) : [selector];
+        } else if (selector instanceof NodeList) {
+            this.nodes = selector.length > 0 ? [].slice.call(selector) : [];
+        } else if (typeof selector === 'string') {
+            if (selector[0] === '<' && selector[selector.length - 1] === ">") {
+                // Create DOM elements
+                this.nodes = [createNode(selector)];
+            } else {
+                // Query DOM
+                this.nodes = [].slice.call(document.querySelectorAll(selector));
+            }
+        }
+
+        copyNodetoThis.call(this);
+    }
+
+    //Private but related to internal
+    function copyNodetoThis(){
+        if (this.nodes.length) {
+            this.length = this.nodes.length;
+            for (var i = 0; i < this.nodes.length; i++) {
+                this[i] = this.nodes[i];
+            }
+        }
+    }
+
+    function updateNodes(data){
+        this.nodes = [].slice.call(data);
+        copyNodetoThis.call(this);
+    }
+
+    //Private Methods
+    function createNode(html) {
+        var div = document.createElement('div');
+        div.innerHTML = html;
+        return div.firstChild;
+    }
+
+    function hasClassSingleEle(singleEle, classes){
+        if (singleEle.classList) {
+            return singleEle.classList.contains(classes);
+        } else {
+            return !!singleEle.classList.match(new RegExp('(\\s|^)' + classes + '(\\s|$)'))
+        }
+    }
+
+    // Public Methods
+    v$.fn = v$.prototype;
+
+    v$.fn.each = function(callback) {
+        for (var i = 0; i < this.length; i++) {
+            callback.call(this[i], this, i);
+        }
+        return this;
+    };
+
+    v$.fn.addClass = function(classes) {
+        return this.each(function() {
+            if (this.classList) {
+                this.classList.add(classes);
+            }
+        });
+    };
+
+    v$.fn.hasClass = function(classes) {
+        var firstEle = this[0];
+        return hasClassSingleEle(firstEle, classes);
+    }
+
+    v$.fn.removeClass = function(classes) {
+        return this.each(function() {
+            if (this.classList) {
+                this.classList.remove(classes);
+            }
+        });
+    };
+
+    v$.fn.closest = function(destClass) {
+        var firstEle = this[0];
+
+        var closestParnt;
+        var closestEle = function(el, fn) {
+            return el && (fn(el) ? el : closestEle(el.parentNode, fn));
+        };
+        closestParnt = closestEle(firstEle, function(el) {
+            if (el.nodeName == document.nodeName) {
+                return false; // reached at top of document
+            } else {
+                return hasClassSingleEle(el, destClass);
+            }
+        });
+        closestParnt = closestParnt || []; // this to return empty arr
+        //updateNodes.call(this, [closestParnt]);
+        return v$(closestParnt); //don't make querySelectorAll
+        //return this;
+    };
+
+    v$.fn.findAll = function(selector){
+        return v$(this[0].querySelectorAll(selector));
+    }
+
+    v$.fn.find = function(selector){
+        return v$(this[0].querySelector(selector)); //don't make querySelectorAll
+    }
+
+    v$.fn.text = function(str) {
+        if (str) {
+            return this.each(function() {
+                this.innerText = str;
+            });
+        }
+        return this.length && this[0].innerText;
+    };
+
+    v$.fn.on = function(name, handler) {
+        return this.each(function() {
+            this.addEventListener(name, handler, false);
+        });
+    };
+
+    window[libName] = v$;
+
+})(window, "v$");
+//====================== End dom lib ========================
