@@ -29,7 +29,7 @@ d.getNameColor();
 d.getColor();
 
 Object.defineProperty(Dog.prototype, 'constructor', {
-  value:Animal.prototype,
+  value:Dog,
   enumerable:false,
   writable:true
 });
